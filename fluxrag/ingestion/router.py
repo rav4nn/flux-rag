@@ -31,3 +31,28 @@ class ParserRouter:
     def supported_extensions(self) -> list[str]:
         """Return all registered extensions."""
         return sorted(self._parsers.keys())
+
+
+def create_default_router() -> ParserRouter:
+    """Create a router with all built-in parsers registered."""
+    from fluxrag.ingestion.audio import AudioParser
+    from fluxrag.ingestion.csv_parser import CSVParser
+    from fluxrag.ingestion.docx import DocxParser
+    from fluxrag.ingestion.html import HTMLParser
+    from fluxrag.ingestion.image import ImageParser
+    from fluxrag.ingestion.jsonl import JSONLParser
+    from fluxrag.ingestion.pdf import PDFParser
+    from fluxrag.ingestion.text import TextParser
+    from fluxrag.ingestion.youtube import YouTubeParser
+
+    router = ParserRouter()
+    router.register(TextParser())
+    router.register(PDFParser())
+    router.register(DocxParser())
+    router.register(CSVParser())
+    router.register(HTMLParser())
+    router.register(JSONLParser())
+    router.register(ImageParser())
+    router.register(AudioParser())
+    router.register(YouTubeParser())
+    return router
