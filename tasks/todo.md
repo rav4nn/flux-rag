@@ -15,10 +15,12 @@ To run baseline on coffee corpus:
 5. Generate QA: python -m fluxrag.eval.generate_qa (or manually create eval/coffee_qa.jsonl)
 6. Run: fluxrag eval --config examples/coffee/domain.yaml
 
-## Next: Phase 3 — Matrix A (Chunking × Retrieval)
+Phase 3 complete (code). Sentence chunking, semantic chunking, hybrid retrieval (BM25+dense+RRF),
+cross-encoder reranking, hybrid+rerank retriever, Matrix A benchmark runner. 80 tests passing.
 
-Implement sentence chunking (Strategy B), semantic chunking (Strategy C),
-hybrid retrieval (Strategy 2), hybrid + rerank (Strategy 3).
-Run full 3×3 matrix.
+## Next: Phase 4 — Matrix B (Embedding Benchmark)
 
-Done when: `eval/matrix_a_report.md`.
+Implement embedding provider clients (OpenAI, Cohere, Voyage).
+Run across all 8 models with Matrix A winner as fixed config.
+
+Done when: `eval/matrix_b_embedding_report.md`.

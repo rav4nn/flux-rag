@@ -155,8 +155,24 @@ class Pipeline:
         return harness.evaluate(qa_pairs)
 
     def benchmark(self) -> BenchmarkResult:
-        """Run all configured benchmark matrices."""
-        raise NotImplementedError("Benchmarking not yet implemented (Phase 3+)")
+        """Run Matrix A: Chunking × Retrieval benchmark."""
+        if not self._documents:
+            raise RuntimeError("No documents. Run ingest() first.")
+
+        from fluxrag.benchmark.runner import MatrixARunner
+
+        runner = MatrixARunner(
+            documents=self._documents,
+            embedder=self._create_embedder(),
+            generator=self._create_generator(),
+            judge=self._create_judge(),
+            qa_pairs_path=self.config.eval.qa_pairs_path,
+            reranker_model=self.config.retrieval.reranker or "cross-encoder/ms-marco-MiniLM-L-6-v2",
+            target_tokens=self.config.chunking.target_tokens,
+            top_k=self.config.retrieval.top_k,
+            rerank_candidates=self.config.retrieval.rerank_candidates,
+        )
+        return runner.run()
 
     def query(
         self,
@@ -197,12 +213,17 @@ class Pipeline:
     # --- Factory methods ---
 
     def _create_chunker(self):
-        from fluxrag.chunking.fixed import FixedChunker
-
         strategy = self.config.chunking.strategy
         if strategy == "fixed":
+            from fluxrag.chunking.fixed import FixedChunker
             return FixedChunker()
-        raise NotImplementedError(f"Chunking strategy '{strategy}' not yet implemented")
+        elif strategy == "sentence":
+            from fluxrag.chunking.sentence import SentenceChunker
+            return SentenceChunker()
+        elif strategy == "semantic":
+            from fluxrag.chunking.semantic import SemanticChunker
+            return SemanticChunker(self._create_embedder())
+        raise ValueError(f"Unknown chunking strategy: {strategy}")
 
     def _create_embedder(self):
         from fluxrag.embedding.local import LocalEmbedder
@@ -215,13 +236,25 @@ class Pipeline:
         return ChromaDBStore(collection_name=self.config.domain.name)
 
     def _create_retriever(self):
-        from fluxrag.retrieval.dense import DenseRetriever
-
         strategy = self.config.retrieval.strategy
-        if strategy in ("dense", "hybrid", "hybrid_rerank"):
-            # For Phase 2, all strategies start with dense
+        if strategy == "dense":
+            from fluxrag.retrieval.dense import DenseRetriever
             return DenseRetriever(self._embedder, self._store)
-        raise NotImplementedError(f"Retrieval strategy '{strategy}' not yet implemented")
+        elif strategy == "hybrid":
+            from fluxrag.retrieval.hybrid import HybridRetriever
+            return HybridRetriever(self._embedder, self._store, self._chunks)
+        elif strategy == "hybrid_rerank":
+            from fluxrag.retrieval.hybrid import HybridRetriever
+            from fluxrag.retrieval.hybrid_rerank import HybridRerankRetriever
+            from fluxrag.reranking.cross_encoder import CrossEncoderReranker
+            hybrid = HybridRetriever(self._embedder, self._store, self._chunks)
+            reranker = CrossEncoderReranker(
+                self.config.retrieval.reranker or "cross-encoder/ms-marco-MiniLM-L-6-v2"
+            )
+            return HybridRerankRetriever(
+                hybrid, reranker, self.config.retrieval.rerank_candidates
+            )
+        raise ValueError(f"Unknown retrieval strategy: {strategy}")
 
     def _create_generator(self):
         if self._generator is None:
