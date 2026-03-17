@@ -1,0 +1,80 @@
+domain:
+  name: "specialty_coffee"
+  description: "Expert knowledge on coffee brewing, extraction, and preparation"
+
+corpus:
+  sources:
+    - path: "./data/documents/"
+      types: ["pdf", "docx", "txt"]
+      weight: 1.0
+    - path: "./data/youtube_urls.txt"
+      type: "youtube"
+      weight: 1.0
+    - path: "./data/podcasts/"
+      types: ["mp3", "wav"]
+      transcription_model: "whisper-large-v3"
+      weight: 1.0
+    - path: "./data/images/"
+      types: ["png", "jpg"]
+      ocr_engine: "tesseract"
+      weight: 0.8
+    - path: "./data/legacy.jsonl"
+      weight: 1.0
+  dedup_key: "id"
+
+chunking:
+  strategy: "semantic"
+  target_tokens: 200
+  overlap_sentences: 1
+
+embedding:
+  model: "sentence-transformers/all-MiniLM-L6-v2"
+
+retrieval:
+  strategy: "hybrid_rerank"
+  top_k: 5
+  rerank_candidates: 20
+  reranker: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+
+llm:
+  model: "claude-sonnet-4-20250514"
+
+eval:
+  enabled: true
+  qa_pairs_path: "./eval/coffee_qa.jsonl"
+  judge: "claude-sonnet-4-20250514"
+
+benchmark:
+  embedding_models:
+    - "sentence-transformers/all-MiniLM-L6-v2"
+    - "BAAI/bge-large-en-v1.5"
+    - "nomic-ai/nomic-embed-text-v1.5"
+    - "Alibaba-NLP/gte-large-en-v1.5"
+    - "openai/text-embedding-3-small"
+    - "openai/text-embedding-3-large"
+    - "cohere/embed-english-v3.0"
+    - "voyageai/voyage-3"
+  llms:
+    - "claude-sonnet-4-20250514"
+    - "claude-haiku-4-20250514"
+    - "gpt-4o"
+    - "gpt-4o-mini"
+    - "gemini-2.5-flash"
+    - "gemini-2.5-pro"
+    - "meta-llama/Llama-3.3-70B"
+    - "mistral-large-latest"
+  rerankers:
+    - "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    - "BAAI/bge-reranker-v2-m3"
+    - "cohere/rerank-english-v3.0"
+    - "jinaai/jina-reranker-v2-base-multilingual"
+  budget_limit_usd: 50.0
+
+api:
+  host: "0.0.0.0"
+  port: 8001
+  metadata_filters:
+    - "source"
+    - "source_type"
+    - "brew_method"
+    - "topic_category"
