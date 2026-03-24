@@ -37,37 +37,39 @@ retrieval:
   reranker: "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
 llm:
-  model: "claude-sonnet-4-20250514"
+  model: "deepseek/deepseek-chat"
 
 eval:
   enabled: true
   qa_pairs_path: "./eval/coffee_qa.jsonl"
-  judge: "claude-sonnet-4-20250514"
+  judge: "deepseek/deepseek-chat"
 
 benchmark:
   embedding_models:
     - "sentence-transformers/all-MiniLM-L6-v2"
     - "BAAI/bge-large-en-v1.5"
     - "nomic-ai/nomic-embed-text-v1.5"
-    - "Alibaba-NLP/gte-large-en-v1.5"
+    - "thenlper/gte-large"
     - "openai/text-embedding-3-small"
     - "openai/text-embedding-3-large"
     - "cohere/embed-english-v3.0"
-    - "voyageai/voyage-3"
+    - "voyage/voyage-3"
   llms:
-    - "claude-sonnet-4-20250514"
-    - "claude-haiku-4-20250514"
-    - "gpt-4o"
-    - "gpt-4o-mini"
-    - "gemini-2.5-flash"
-    - "gemini-2.5-pro"
-    - "meta-llama/Llama-3.3-70B"
-    - "mistral-large-latest"
+    - "anthropic/claude-sonnet-4-20250514"
+    - "anthropic/claude-haiku-4-20250414"
+    - "openai/gpt-4o"
+    - "openai/gpt-4o-mini"
+    - "google/gemini-2.5-flash"
+    - "google/gemini-2.5-pro"
+    - "groq/llama-3.3-70b-versatile"
+    - "mistral/mistral-large-latest"
+    - "deepseek/deepseek-chat"
   rerankers:
     - "cross-encoder/ms-marco-MiniLM-L-6-v2"
     - "BAAI/bge-reranker-v2-m3"
-    - "cohere/rerank-english-v3.0"
     - "jinaai/jina-reranker-v2-base-multilingual"
+    - "cohere/rerank-english-v3.0"
+    - "jina/jina-reranker-v2-base-multilingual"
   budget_limit_usd: 50.0
 
 api:

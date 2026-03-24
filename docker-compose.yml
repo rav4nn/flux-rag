@@ -1,0 +1,13 @@
+version: "3.8"
+
+services:
+  fluxrag:
+    build: .
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./examples/coffee/domain.yaml:/etc/fluxrag/domain.yaml:ro
+      - ./examples/coffee/data:/app/data:ro
+    env_file:
+      - .env
+    restart: unless-stopped

@@ -1,0 +1,55 @@
+"""Groq LLM client (Llama 3.3 70B and other models)."""
+
+from __future__ import annotations
+
+import os
+
+from fluxrag.llm.base import AbstractLLM
+
+
+class GroqLLM(AbstractLLM):
+    """Groq-hosted models via the Groq SDK (OpenAI-compatible)."""
+
+    def __init__(self, model: str = "llama-3.3-70b-versatile", max_tokens: int = 1024) -> None:
+        from groq import Groq
+
+        self._model = model
+        self._max_tokens = max_tokens
+        self._client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+
+    def generate(
+        self,
+        prompt: str,
+        context: list[str] | None = None,
+        **kwargs: object,
+    ) -> str:
+        max_tokens = int(kwargs.get("max_tokens", self._max_tokens))
+        temperature = float(kwargs.get("temperature", 0.0))
+
+        if context:
+            context_block = "\n\n---\n\n".join(context)
+            full_prompt = (
+                f"Use the following context to answer the question. "
+                f"Only use information from the context. If the context doesn't "
+                f"contain the answer, say so.\n\n"
+                f"Context:\n{context_block}\n\n"
+                f"Question: {prompt}"
+            )
+        else:
+            full_prompt = prompt
+
+        response = self._client.chat.completions.create(
+            model=self._model,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            messages=[{"role": "user", "content": full_prompt}],
+        )
+        return response.choices[0].message.content
+
+    @property
+    def model_name(self) -> str:
+        return self._model
+
+    @property
+    def provider(self) -> str:
+        return "groq"

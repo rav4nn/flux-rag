@@ -1,26 +1,54 @@
 # FluxRAG — Active Tasks
 
-## Current Phase: 2 — Baseline ✅ (pipeline built, awaiting coffee corpus)
+## All Phases Complete (code) — awaiting benchmark runs + deployment
 
-Phase 0 complete. All ABCs defined, config models implemented, CLI/API stubs in place.
-Phase 1 complete. All 9 parsers implemented + router + validator.
-Phase 2 complete (code). Fixed chunking, local embedder, ChromaDB store, dense retrieval,
-eval harness, QA generator, Anthropic LLM client, pipeline wiring. 61 tests passing.
+### Phase 0 ✅ — Scaffold
+All ABCs defined, config models, CLI/API stubs.
 
-To run baseline on coffee corpus:
-1. Place coffee data in examples/coffee/data/
-2. Set ANTHROPIC_API_KEY in .env
-3. Run: fluxrag ingest --config examples/coffee/domain.yaml
-4. Run: fluxrag build --config examples/coffee/domain.yaml
-5. Generate QA: python -m fluxrag.eval.generate_qa (or manually create eval/coffee_qa.jsonl)
-6. Run: fluxrag eval --config examples/coffee/domain.yaml
+### Phase 1 ✅ — Ingestion
+9 parsers + router + validator.
 
-Phase 3 complete (code). Sentence chunking, semantic chunking, hybrid retrieval (BM25+dense+RRF),
-cross-encoder reranking, hybrid+rerank retriever, Matrix A benchmark runner. 80 tests passing.
+### Phase 2 ✅ — Baseline Pipeline
+Fixed chunking, local embedder, ChromaDB, dense retrieval, eval harness, Anthropic LLM client, pipeline wiring.
 
-## Next: Phase 4 — Matrix B (Embedding Benchmark)
+### Phase 3 ✅ — Matrix A (Chunking × Retrieval)
+Sentence chunking, semantic chunking, hybrid retrieval (BM25+dense+RRF), cross-encoder reranking, hybrid+rerank, MatrixARunner.
 
-Implement embedding provider clients (OpenAI, Cohere, Voyage).
-Run across all 8 models with Matrix A winner as fixed config.
+### Phase 4 ✅ — Matrix B (Embedding Benchmark)
+OpenAI/Cohere/Voyage embedder clients, embedder factory (8 models), MatrixBRunner.
 
-Done when: `eval/matrix_b_embedding_report.md`.
+### Phase 5 ✅ — Matrix C (Reranker Benchmark)
+Cohere reranker, Jina reranker (REST API), reranker factory (5 models), MatrixCRunner.
+
+### Phase 6 ✅ — Matrix D (LLM Benchmark)
+OpenAI/Google/Groq/Mistral LLM clients, LLM factory (8 models, 5 providers), MatrixDRunner.
+
+### Phase 7 ✅ — Production Deploy
+FastAPI routes (query, health, eval, benchmark), Pipeline wired to factories, Dockerfile, docker-compose.yml.
+
+93 tests passing.
+
+## To Run Benchmarks
+
+1. Place coffee data in `examples/coffee/data/`
+2. Set API keys in `.env`:
+   ```
+   ANTHROPIC_API_KEY=...
+   OPENAI_API_KEY=...
+   CO_API_KEY=...
+   VOYAGE_API_KEY=...
+   GOOGLE_API_KEY=...
+   GROQ_API_KEY=...
+   MISTRAL_API_KEY=...
+   JINA_API_KEY=...
+   ```
+3. Run sequentially: Matrix A → B → C → D (each winner feeds the next)
+4. Reports generated in `eval/` directory
+
+## To Deploy
+
+```bash
+docker build -t fluxrag:latest .
+docker-compose up -d
+# Or: fluxrag serve --config examples/coffee/domain.yaml
+```

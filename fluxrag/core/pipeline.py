@@ -40,6 +40,21 @@ class Pipeline:
         self._retriever = None
         self._generator = None
 
+    @property
+    def is_ready(self) -> bool:
+        """Whether the pipeline is built and ready to answer queries."""
+        return self._retriever is not None and self._embedder is not None
+
+    @property
+    def corpus_size(self) -> int:
+        """Number of chunks in the vector store."""
+        if self._store is None:
+            return 0
+        try:
+            return self._store.count()
+        except Exception:
+            return 0
+
     @classmethod
     def from_config(cls, config_path: str) -> Pipeline:
         """Load a pipeline from a domain.yaml config file."""
@@ -226,9 +241,9 @@ class Pipeline:
         raise ValueError(f"Unknown chunking strategy: {strategy}")
 
     def _create_embedder(self):
-        from fluxrag.embedding.local import LocalEmbedder
+        from fluxrag.embedding.factory import create_embedder
 
-        return LocalEmbedder(self.config.embedding.model)
+        return create_embedder(self.config.embedding.model)
 
     def _create_store(self):
         from fluxrag.embedding.chromadb_store import ChromaDBStore
@@ -246,9 +261,9 @@ class Pipeline:
         elif strategy == "hybrid_rerank":
             from fluxrag.retrieval.hybrid import HybridRetriever
             from fluxrag.retrieval.hybrid_rerank import HybridRerankRetriever
-            from fluxrag.reranking.cross_encoder import CrossEncoderReranker
+            from fluxrag.reranking.factory import create_reranker
             hybrid = HybridRetriever(self._embedder, self._store, self._chunks)
-            reranker = CrossEncoderReranker(
+            reranker = create_reranker(
                 self.config.retrieval.reranker or "cross-encoder/ms-marco-MiniLM-L-6-v2"
             )
             return HybridRerankRetriever(
@@ -258,12 +273,12 @@ class Pipeline:
 
     def _create_generator(self):
         if self._generator is None:
-            from fluxrag.llm.anthropic import AnthropicLLM
+            from fluxrag.llm.factory import create_llm
 
-            self._generator = AnthropicLLM(model=self.config.llm.model)
+            self._generator = create_llm(self.config.llm.model)
         return self._generator
 
     def _create_judge(self):
-        from fluxrag.llm.anthropic import AnthropicLLM
+        from fluxrag.llm.factory import create_llm
 
-        return AnthropicLLM(model=self.config.eval.judge)
+        return create_llm(self.config.eval.judge)
