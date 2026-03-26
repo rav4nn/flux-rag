@@ -6,6 +6,7 @@ import json
 import logging
 import time
 from pathlib import Path
+from typing import Any
 
 from fluxrag.core.schema import EvalResult, QAPair
 from fluxrag.llm.base import AbstractLLM
@@ -94,6 +95,7 @@ class EvalHarness:
         self,
         qa_pairs: list[QAPair],
         output_path: str | None = None,
+        progress_callback: Any = None,
     ) -> EvalResult:
         """Run evaluation across all QA pairs and return aggregate scores."""
         recall_scores: list[float] = []
@@ -104,6 +106,8 @@ class EvalHarness:
 
         for i, qa in enumerate(qa_pairs):
             logger.info("Evaluating QA pair %d/%d: %s", i + 1, len(qa_pairs), qa.question[:60])
+            if progress_callback:
+                progress_callback(i + 1, len(qa_pairs), qa.question)
             start = time.time()
 
             # Retrieve
@@ -114,7 +118,7 @@ class EvalHarness:
             answer = self.generator.generate(qa.question, context=contexts)
 
             # Score
-            recall = self._score_context_recall(qa.question, qa.ground_truth, contexts)
+            recall = self._score_context_recall(qa.question, qa.get_ground_truth(), contexts)
             precision = self._score_context_precision(qa.question, contexts)
             faithfulness = self._score_faithfulness(qa.question, contexts, answer)
             relevancy = self._score_answer_relevancy(qa.question, answer)
@@ -127,7 +131,7 @@ class EvalHarness:
             elapsed = time.time() - start
             details.append({
                 "question": qa.question,
-                "ground_truth": qa.ground_truth,
+                "ground_truth": qa.get_ground_truth(),
                 "answer": answer,
                 "context_recall": recall,
                 "context_precision": precision,

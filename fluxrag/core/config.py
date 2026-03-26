@@ -69,6 +69,27 @@ class BenchmarkConfig(BaseModel):
     budget_limit_usd: float = 50.0
 
 
+class SweepConfig(BaseModel):
+    """Parameter grid for automated sweep evaluation."""
+
+    chunking_strategies: list[Literal["fixed", "sentence", "semantic"]] = [
+        "fixed", "sentence", "semantic",
+    ]
+    target_tokens: list[int] = [200, 400]
+    retrieval_strategies: list[Literal["dense", "hybrid", "hybrid_rerank"]] = [
+        "dense", "hybrid_rerank",
+    ]
+    top_k: list[int] = [5]
+
+    @field_validator("target_tokens")
+    @classmethod
+    def _all_positive(cls, v: list[int]) -> list[int]:
+        for t in v:
+            if t <= 0:
+                raise ValueError("All target_tokens values must be positive")
+        return v
+
+
 class APIConfig(BaseModel):
     host: str = "0.0.0.0"
     port: int = 8001
@@ -86,6 +107,7 @@ class FluxRAGConfig(BaseModel):
     llm: LLMConfig = LLMConfig()
     eval: EvalConfig = EvalConfig()
     benchmark: BenchmarkConfig = BenchmarkConfig()
+    sweep: SweepConfig = SweepConfig()
     api: APIConfig = APIConfig()
 
     @classmethod

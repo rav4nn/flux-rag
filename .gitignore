@@ -24,9 +24,10 @@ env/
 # Data (raw corpus files)
 examples/coffee/data/
 
-# Vector stores
+# Vector stores and pipeline cache
 *.chromadb/
 qdrant_storage/
+**/.fluxrag/
 
 # Eval results (regenerated)
 eval/results/

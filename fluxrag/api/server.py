@@ -27,8 +27,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     config_path = app.state.config_path
     if config_path:
         _pipeline = Pipeline.from_config(config_path)
-        _pipeline.ingest()
-        _pipeline.build()
+        _pipeline.load()
     yield
     _pipeline = None
 

@@ -81,9 +81,14 @@ class QAPair(BaseModel):
     """A question-answer pair for evaluation."""
 
     question: str
-    ground_truth: str
-    source_chunk_id: str
+    ground_truth: str = ""
+    answer: str = ""  # alias accepted from hand-written QA files
+    source_chunk_id: str = ""
     difficulty: Literal["easy", "medium", "hard"] = "medium"
+
+    def get_ground_truth(self) -> str:
+        """Return ground_truth, falling back to answer field."""
+        return self.ground_truth or self.answer
 
 
 class EvalResult(BaseModel):

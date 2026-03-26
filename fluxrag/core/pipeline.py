@@ -33,6 +33,7 @@ class Pipeline:
 
     def __init__(self, config: FluxRAGConfig) -> None:
         self.config = config
+        self._config_dir: Path = Path.cwd()
         self._documents: list[Document] = []
         self._chunks: list[Chunk] = []
         self._embedder = None
@@ -59,7 +60,9 @@ class Pipeline:
     def from_config(cls, config_path: str) -> Pipeline:
         """Load a pipeline from a domain.yaml config file."""
         config = FluxRAGConfig.from_yaml(config_path)
-        return cls(config)
+        pipeline = cls(config)
+        pipeline._config_dir = Path(config_path).parent.resolve()
+        return pipeline
 
     def ingest(self) -> list[Document]:
         """Parse all configured sources into unified Document objects."""
@@ -71,14 +74,23 @@ class Pipeline:
         all_docs: list[Document] = []
 
         for source in self.config.corpus.sources:
-            source_path = Path(source.path)
+            source_path = (self._config_dir / source.path).resolve()
             kwargs: dict[str, object] = {}
             if source.transcription_model:
                 kwargs["transcription_model"] = source.transcription_model
             if source.ocr_engine:
                 kwargs["ocr_engine"] = source.ocr_engine
 
-            if source.type == "youtube":
+            if source.type == "youtube_scraper":
+                # youtube-rag-scraper JSON output
+                from fluxrag.ingestion.youtube_scraper import YouTubeScraperParser
+
+                parser = YouTubeScraperParser()
+                docs = parser.parse(str(source_path), **kwargs)
+                all_docs.extend(docs)
+                logger.info("Ingested %d transcripts from scraper file: %s", len(docs), source_path)
+
+            elif source.type == "youtube":
                 # YouTube URL file — pass directly to youtube parser
                 from fluxrag.ingestion.youtube import YouTubeParser
 
@@ -143,8 +155,36 @@ class Pipeline:
 
         logger.info("Stored %d embedded chunks in vector store", self._store.count())
 
+        # Cache chunks to disk so load() can restore the pipeline without re-embedding
+        import json as _json
+        cache_dir = self._config_dir / ".fluxrag"
+        cache_dir.mkdir(exist_ok=True)
+        with open(cache_dir / "chunks.json", "w", encoding="utf-8") as _f:
+            _json.dump([c.model_dump() for c in self._chunks], _f)
+
         # Set up retriever
         self._retriever = self._create_retriever()
+
+    def load(self) -> None:
+        """Reconnect to a previously built index without re-embedding."""
+        import json as _json
+
+        cache_dir = self._config_dir / ".fluxrag"
+        chunks_path = cache_dir / "chunks.json"
+        if not chunks_path.exists():
+            raise RuntimeError(
+                f"No built index found at {cache_dir}. Run 'fluxrag build' first."
+            )
+        with open(chunks_path, encoding="utf-8") as _f:
+            self._chunks = [Chunk(**c) for c in _json.load(_f)]
+        self._embedder = self._create_embedder()
+        self._store = self._create_store()
+        self._retriever = self._create_retriever()
+        logger.info(
+            "Loaded pipeline: %d chunks, store has %d vectors",
+            len(self._chunks),
+            self._store.count(),
+        )
 
     def evaluate(self) -> EvalResult:
         """Run evaluation against the QA test set."""
@@ -154,7 +194,8 @@ class Pipeline:
         from fluxrag.eval.generate_qa import load_qa_pairs
         from fluxrag.eval.harness import EvalHarness
 
-        qa_pairs = load_qa_pairs(self.config.eval.qa_pairs_path)
+        qa_pairs_path = str((self._config_dir / self.config.eval.qa_pairs_path).resolve())
+        qa_pairs = load_qa_pairs(qa_pairs_path)
         logger.info("Loaded %d QA pairs from %s", len(qa_pairs), self.config.eval.qa_pairs_path)
 
         generator = self._create_generator()
@@ -215,12 +256,12 @@ class Pipeline:
             latency_ms=latency_ms,
         )
 
-    def serve(self) -> None:
+    def serve(self, config_path: str = "") -> None:
         """Start the FastAPI server."""
         from fluxrag.api.server import run_server
 
         run_server(
-            config_path="",
+            config_path=config_path,
             host=self.config.api.host,
             port=self.config.api.port,
         )
@@ -248,7 +289,8 @@ class Pipeline:
     def _create_store(self):
         from fluxrag.embedding.chromadb_store import ChromaDBStore
 
-        return ChromaDBStore(collection_name=self.config.domain.name)
+        persist_dir = str(self._config_dir / ".fluxrag" / "chroma")
+        return ChromaDBStore(collection_name=self.config.domain.name, persist_directory=persist_dir)
 
     def _create_retriever(self):
         strategy = self.config.retrieval.strategy
