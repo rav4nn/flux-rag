@@ -43,6 +43,14 @@ Eval (LLM-judge: context recall, precision, faithfulness, answer relevancy)
 FastAPI Server (/query, /health, /eval, /benchmark)
 ```
 
+## Prerequisites
+
+- **Python 3.12+**
+- **ffmpeg** — required for audio ingestion (`faster-whisper`). Install via `brew install ffmpeg` / `apt install ffmpeg` / `choco install ffmpeg`.
+- **Tesseract** — required only for image OCR. Install via `brew install tesseract` / `apt install tesseract-ocr` / `choco install tesseract`.
+
+> Audio and OCR deps are optional — if you're only ingesting text, PDFs, or YouTube transcripts you don't need them.
+
 ## Quick Start
 
 ```bash
@@ -50,11 +58,12 @@ FastAPI Server (/query, /health, /eval, /benchmark)
 git clone https://github.com/rav4nn/flux-rag.git
 cd flux-rag
 python -m venv .venv
-.venv/Scripts/Activate.ps1   # Windows
-# source .venv/bin/activate  # Linux/Mac
+source .venv/bin/activate       # Linux/Mac
+# .venv/Scripts/Activate.ps1   # Windows
 
-# Install
+# Install (text/PDF/YouTube — no system deps needed)
 pip install -e .
+# With audio/OCR: pip install -e ".[all]"
 
 # Add API keys
 cp .env.example .env

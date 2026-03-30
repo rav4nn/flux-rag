@@ -43,3 +43,8 @@ Thumbs.db
 
 # Claude Code
 .claude/
+
+# Internal dev docs
+CLAUDE.md
+PRD.md
+tasks/

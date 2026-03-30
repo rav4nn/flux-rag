@@ -19,19 +19,14 @@ dependencies = [
     "click>=8.0",
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.30.0",
-    # Ingestion
+    # Ingestion (text-based)
     "pymupdf>=1.24.0",
     "python-docx>=1.1.0",
     "beautifulsoup4>=4.12.0",
     "trafilatura>=1.12.0",
     "pandas>=2.2.0",
     "chardet>=5.2.0",
-    "pytesseract>=0.3.13",
-    "faster-whisper>=1.1.0",
-    "yt-dlp>=2024.0",
     "youtube-transcript-api>=0.6.0",
-    # Chunking
-    "spacy>=3.7.0",
     # Embedding
     "sentence-transformers>=3.0.0",
     "openai>=1.50.0",
@@ -50,6 +45,17 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+audio = [
+    "faster-whisper>=1.1.0",
+    "yt-dlp>=2024.0",
+]
+ocr = [
+    "pytesseract>=0.3.13",
+]
+all = [
+    "fluxrag[audio,ocr]",
+    "spacy>=3.7.0",
+]
 dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",
