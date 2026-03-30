@@ -83,6 +83,29 @@ fluxrag eval --config examples/coffee/domain.yaml --label "baseline"
 fluxrag sweep --config examples/coffee/domain.yaml --label "v1"
 ```
 
+## YouTube Channel/Playlist Ingestion
+
+Want to build a RAG knowledge base from an entire YouTube channel or playlist? Use [youtube-rag-scraper](https://github.com/rav4nn/youtube-rag-scraper) to bulk-scrape transcripts, then feed the output directly into FluxRAG:
+
+```bash
+# 1. Scrape a full channel or playlist
+pip install youtube-rag-scraper
+youtube-rag-scraper --channel "@JamesHoffmann" --output hoffmann.json
+
+# 2. Point FluxRAG at the output
+# In your domain.yaml:
+#   corpus:
+#     sources:
+#       - path: "./data/hoffmann.json"
+#         type: "youtube_scraper"
+
+# 3. Build and query
+fluxrag build --config domain.yaml
+fluxrag serve --config domain.yaml
+```
+
+FluxRAG natively parses youtube-rag-scraper's JSON format — no conversion needed.
+
 ## CLI Commands
 
 | Command | What it does |
